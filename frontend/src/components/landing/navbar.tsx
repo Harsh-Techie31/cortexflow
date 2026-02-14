@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Button } from '@/client/components/ui/button';
+import { Button } from '@/components/ui/button';
 
 export function Navbar() {
     return (

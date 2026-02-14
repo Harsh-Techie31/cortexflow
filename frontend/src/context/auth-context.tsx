@@ -16,6 +16,7 @@ interface AuthContextType {
     signup: (email: string, password: string) => Promise<void>;
     login: (email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
+    getToken: () => Promise<string | null>;
     error: string | null;
 }
 
@@ -72,8 +73,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const getToken = async () => {
+        if (!user) return null;
+        try {
+            return await user.getIdToken();
+        } catch (err) {
+            console.error("Error getting token", err);
+            return null;
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, signup, login, logout, error }}>
+        <AuthContext.Provider value={{ user, loading, signup, login, logout, getToken, error }}>
             {!loading && children}
         </AuthContext.Provider>
     );

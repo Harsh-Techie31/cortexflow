@@ -21,7 +21,7 @@ export default function SignupPage() {
     try {
       await signup(email, password)
       // Ideally update profile with name here using updateProfile from firebase/auth
-      router.push("/")
+      router.push("/dashboard")
     } catch (err) {
       console.error("Failed to sign up", err)
     }

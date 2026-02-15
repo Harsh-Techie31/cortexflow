@@ -1,11 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
-import admin from '../config/firebaseAdmin';
+const admin = require('../config/firebaseAdmin');
 
-export interface AuthRequest extends Request {
-  user?: admin.auth.DecodedIdToken;
-}
-
-export const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction) => {
+const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -24,3 +19,5 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
     res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 };
+
+module.exports = { authMiddleware };

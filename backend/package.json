@@ -8,9 +8,8 @@
     "typescript": "^5.9.3"
   },
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "dev": "nodemon src/server.ts"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
   },
   "dependencies": {
     "chromadb": "^3.3.0",

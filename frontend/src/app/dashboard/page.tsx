@@ -1,18 +1,46 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
-    const { user, loading, logout } = useAuth();
+    const { user, loading, logout, getToken } = useAuth();
     const router = useRouter();
+    const [backendStatus, setBackendStatus] = useState<string | null>(null);
 
     useEffect(() => {
         if (!loading && !user) {
             router.push("/login");
         }
     }, [user, loading, router]);
+
+    const testBackend = async () => {
+        setBackendStatus("Testing connection...");
+        try {
+            const token = await getToken();
+            if (!token) {
+                setBackendStatus("Error: No token available");
+                return;
+            }
+
+            console.log(token);
+            const res = await fetch("http://localhost:5000/api/auth/me", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setBackendStatus(`Success: ${data.message} (Mongo ID: ${data.user._id})`);
+            } else {
+                setBackendStatus(`Error: ${res.statusText}`);
+            }
+        } catch (err: any) {
+            setBackendStatus(`Error: ${err.message}`);
+        }
+    };
 
     if (loading) {
         return (
@@ -41,11 +69,26 @@ export default function DashboardPage() {
             </header>
 
             <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+                {/* Backend Status Check */}
+                <div className="mb-6 rounded-lg bg-indigo-50 p-4 border border-indigo-100">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-sm font-medium text-indigo-800">System Status</h3>
+                            <p className="text-sm text-indigo-600 mt-1">
+                                {backendStatus || "Backend connection not tested yet."}
+                            </p>
+                        </div>
+                        <Button size="sm" onClick={testBackend}>
+                            Test Connection
+                        </Button>
+                    </div>
+                </div>
+
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {/* Welcome Card */}
                     <div className="col-span-full rounded-lg bg-white p-6 shadow-sm">
                         <h2 className="text-lg font-medium text-gray-900">
-                            Welcome back {user.email}!
+                            Welcome back!
                         </h2>
                         <p className="mt-1 text-gray-500">
                             Connect your tools to start searching your knowledge base.

@@ -84,4 +84,45 @@ const upsertEmailChunks = async (userId, chunks) => {
     }
 };
 
-module.exports = { upsertEmailChunks };
+/**
+ * Queries similar chunks from ChromaDB based on a user's query.
+ * @param {string} userId 
+ * @param {string} queryText 
+ * @param {number} topK 
+ */
+const querySimilarChunks = async (userId, queryText, topK = 5) => {
+    try {
+        const collectionName = "user_knowledge_base";
+        const collection = await chromaClient.getOrCreateCollection({
+            name: collectionName,
+            embeddingFunction: {
+                generate: async (texts) => { return []; } 
+            }
+        });
+
+        // 1. Embed the query using Cohere (inputType: search_query)
+        const response = await cohere.embed({
+            texts: [queryText],
+            model: 'embed-english-v3.0',
+            inputType: 'search_query', // Critical for RAG retrieval
+        });
+        const queryEmbedding = response.embeddings[0];
+
+        // 2. Query ChromaDB with userId filter
+        const results = await collection.query({
+            queryEmbeddings: [queryEmbedding],
+            nResults: topK,
+            where: { userId: userId.toString() }
+        });
+
+        return {
+            documents: results.documents[0],
+            metadatas: results.metadatas[0]
+        };
+    } catch (error) {
+        console.error('Error querying ChromaDB:', error);
+        throw error;
+    }
+};
+
+module.exports = { upsertEmailChunks, querySimilarChunks };

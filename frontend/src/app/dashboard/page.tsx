@@ -15,6 +15,14 @@ export default function DashboardPage() {
     } | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncStatus, setSyncStatus] = useState<string | null>(null);
+    const [query, setQuery] = useState("");
+    const [messages, setMessages] = useState<Array<{
+        role: 'user' | 'assistant',
+        content: string,
+        references?: string[],
+        timestamp: number
+    }>>([]);
+    const [isSending, setIsSending] = useState(false);
 
     useEffect(() => {
         if (!loading && !user) {
@@ -137,6 +145,55 @@ export default function DashboardPage() {
         }
     };
 
+    const handleSendMessage = async () => {
+        if (!query.trim() || isSending) return;
+
+        const userMsg = query;
+        setQuery("");
+        setMessages(prev => [...prev, { 
+            role: 'user', 
+            content: userMsg, 
+            timestamp: Date.now() 
+        }]);
+        setIsSending(true);
+
+        try {
+            const token = await getToken();
+            const res = await fetch("http://localhost:5000/api/chat/query", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ message: userMsg }),
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                setMessages(prev => [...prev, { 
+                    role: 'assistant', 
+                    content: data.answer, 
+                    references: data.references,
+                    timestamp: Date.now() 
+                }]);
+            } else {
+                setMessages(prev => [...prev, { 
+                    role: 'assistant', 
+                    content: `Error: ${data.error || "Failed to get answer"}`, 
+                    timestamp: Date.now() 
+                }]);
+            }
+        } catch (err: any) {
+            setMessages(prev => [...prev, { 
+                role: 'assistant', 
+                content: `Error: ${err.message}`, 
+                timestamp: Date.now() 
+            }]);
+        } finally {
+            setIsSending(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex h-screen items-center justify-center">
@@ -165,7 +222,7 @@ export default function DashboardPage() {
                         <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 px-2">
                             Integrations
                         </h2>
-                        
+
                         <div className="space-y-3">
                             {/* Gmail Integration Item */}
                             <div className="rounded-xl border border-white/5 bg-white/5 p-4 hover:bg-white/10 transition-colors">
@@ -195,15 +252,15 @@ export default function DashboardPage() {
                                                 <p className="text-xs text-gray-300 truncate">{googleIntegration.profile?.email}</p>
                                             </div>
                                         </div>
-                                        
-                                        <Button 
-                                            onClick={syncEmails} 
+
+                                        <Button
+                                            onClick={syncEmails}
                                             disabled={isSyncing}
                                             className="w-full h-8 text-[11px] bg-indigo-600 hover:bg-indigo-700 text-white"
                                         >
                                             {isSyncing ? "Syncing..." : googleIntegration.initialSyncDone ? "Sync New" : "Initial Sync"}
                                         </Button>
-                                        
+
                                         {googleIntegration.initialSyncDone && !syncStatus && (
                                             <p className="text-[10px] text-center text-indigo-400">Processed past mails ✨</p>
                                         )}
@@ -226,12 +283,12 @@ export default function DashboardPage() {
 
                     {/* System Status Section */}
                     <div className="pt-4 border-t border-white/5">
-                         <div className="px-2 py-2">
+                        <div className="px-2 py-2">
                             <button onClick={testBackend} className="text-[11px] text-gray-500 hover:text-indigo-400 transition-colors flex items-center gap-2">
                                 <div className={`w-1.5 h-1.5 rounded-full ${backendStatus?.includes('Success') ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
                                 {backendStatus?.includes('Success') ? 'Backend: Connected' : 'Check System Status'}
                             </button>
-                         </div>
+                        </div>
                     </div>
                 </nav>
 
@@ -260,20 +317,56 @@ export default function DashboardPage() {
 
                 {/* Message Thread */}
                 <div className="flex-1 overflow-y-auto p-8 space-y-8 max-w-4xl mx-auto w-full">
-                    {/* Welcome Message */}
-                    <div className="flex gap-4">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs font-bold text-white">C</span>
+                    {/* Welcome Message (If no history) */}
+                    {messages.length === 0 && (
+                        <div className="flex gap-4">
+                            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                                <span className="text-xs font-bold text-white">C</span>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-sm leading-relaxed text-gray-300">
+                                    Hello! I'm your Cortex. I can search across your connected tools like Gmail to answer complex questions.
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    Ask me anything about your emails, contacts, or documents.
+                                </p>
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <p className="text-sm leading-relaxed text-gray-300">
-                                Hello! I'm your **Cortex Assistant**. I can search across your connected tools like Gmail to answer complex questions.
-                            </p>
-                            <p className="text-xs text-gray-500">
-                                Ask me anything about your emails, contacts, or documents.
-                            </p>
+                    )}
+
+                    {/* Active Conversation */}
+                    {messages.map((msg, idx) => (
+                        <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                            {msg.role === 'assistant' && (
+                                <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                                    <span className="text-xs font-bold text-white">C</span>
+                                </div>
+                            )}
+                            <div className={`space-y-3 max-w-[85%] ${msg.role === 'user' ? 'bg-indigo-600/10 border border-indigo-600/20 rounded-2xl p-4' : ''}`}>
+                                <p className={`text-sm leading-relaxed ${msg.role === 'user' ? 'text-white' : 'text-gray-300'}`}>
+                                    {msg.content}
+                                </p>
+                                
+                                {msg.references && msg.references.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
+                                        <p className="text-[10px] text-gray-500 w-full mb-1">Sources:</p>
+                                        {msg.references.map((link, lIdx) => (
+                                            <a 
+                                                key={lIdx} 
+                                                href={link} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="text-[10px] bg-white/5 border border-white/10 px-2 py-1 rounded-md hover:bg-white/10 transition-colors text-indigo-400 flex items-center gap-1"
+                                            >
+                                                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                                Email {lIdx + 1}
+                                            </a>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    ))}
 
                     {/* Integration Sync Alert if needed */}
                     {syncStatus && (
@@ -289,14 +382,30 @@ export default function DashboardPage() {
                 <div className="p-8 pt-0 max-w-4xl mx-auto w-full">
                     <div className="relative group">
                         <textarea 
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSendMessage();
+                                }
+                            }}
                             placeholder="Ask a question about your data..."
                             rows={1}
                             className="w-full bg-[#161618] border border-white/10 rounded-2xl px-6 py-4 pr-16 text-sm focus:outline-none focus:border-indigo-500/50 transition-all resize-none shadow-2xl"
                         />
-                        <button className="absolute right-4 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-xl transition-all disabled:opacity-50">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                            </svg>
+                        <button 
+                            onClick={handleSendMessage}
+                            disabled={isSending || !query.trim()}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-xl transition-all disabled:opacity-50"
+                        >
+                            {isSending ? (
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            ) : (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                            )}
                         </button>
                     </div>
                     <p className="text-[10px] text-gray-600 mt-4 text-center">

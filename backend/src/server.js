@@ -7,6 +7,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const googleRoutes = require('./routes/googleRoutes');
 const ingestRoutes = require('./routes/ingestRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 const connectDB = require('./config/db');
 
 connectDB();
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/auth/google', googleRoutes);
 app.use('/api/ingest', ingestRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health Check
 app.get('/ping', (req, res) => {

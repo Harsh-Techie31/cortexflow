@@ -12,18 +12,28 @@ const chromaClient = new CloudClient({
 });
 
 /**
- * Generates embeddings for an array of text strings using Cohere.
+ * Generates embeddings for an array of text strings using Cohere with batching.
  * @param {string[]} texts 
  * @returns {Promise<number[][]>}
  */
 const generateEmbeddings = async (texts) => {
+    const BATCH_SIZE = 90; // Cohere limit is 96
+    const allEmbeddings = [];
+
     try {
-        const response = await cohere.embed({
-            texts,
-            model: 'embed-english-v3.0',
-            inputType: 'search_document',
-        });
-        return response.embeddings;
+        for (let i = 0; i < texts.length; i += BATCH_SIZE) {
+            const batch = texts.slice(i, i + BATCH_SIZE);
+            console.log(`Embedding batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(texts.length / BATCH_SIZE)}`);
+
+            const response = await cohere.embed({
+                texts: batch,
+                model: 'embed-english-v3.0',
+                inputType: 'search_document',
+            });
+
+            allEmbeddings.push(...response.embeddings);
+        }
+        return allEmbeddings;
     } catch (error) {
         console.error('Error generating embeddings:', error);
         throw error;

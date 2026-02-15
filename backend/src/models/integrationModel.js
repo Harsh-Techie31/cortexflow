@@ -34,6 +34,13 @@ const integrationSchema = mongoose.Schema(
     profilePicture: {
       type: String,
     },
+    initialSyncDone: {
+      type: Boolean,
+      default: false,
+    },
+    lastHistoryId: {
+      type: String,
+    },
   },
   {
     timestamps: true,

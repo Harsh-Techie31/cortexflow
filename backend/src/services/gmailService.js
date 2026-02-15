@@ -14,19 +14,25 @@ const fetchLastEmails = async (oauth2Client, count = 30) => {
         q: 'category:primary' // Focus on primary inbox to avoid spam/promotions
     });
 
-    if (!listRes.data.messages) return [];
+    if (!listRes.data.messages) return { emails: [], maxHistoryId: null };
 
     const emails = [];
+    let maxHistoryId = 0;
+
     for (const msg of listRes.data.messages) {
-        // 2. Get full message content
         const msgRes = await gmail.users.messages.get({
             userId: 'me',
             id: msg.id
         });
-        emails.push(msgRes.data);
+        const email = msgRes.data;
+        emails.push(email);
+
+        // Keep track of largest historyId
+        const hId = parseInt(email.historyId);
+        if (hId > maxHistoryId) maxHistoryId = hId;
     }
 
-    return emails;
+    return { emails, maxHistoryId: maxHistoryId.toString() };
 };
 
 /**

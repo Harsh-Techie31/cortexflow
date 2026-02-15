@@ -10,6 +10,7 @@ export default function DashboardPage() {
     const [backendStatus, setBackendStatus] = useState<string | null>(null);
     const [googleIntegration, setGoogleIntegration] = useState<{
         connected: boolean;
+        initialSyncDone: boolean;
         profile: { name: string; picture: string; email: string } | null;
     } | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -124,6 +125,8 @@ export default function DashboardPage() {
             const data = await res.json();
             if (res.ok) {
                 setSyncStatus(`Successfully ingested ${data.emailsCount} emails (${data.chunksCount} searchable chunks).`);
+                // Update local state to reflect sync is done
+                setGoogleIntegration(prev => prev ? { ...prev, initialSyncDone: true } : null);
             } else {
                 setSyncStatus(`Error: ${data.message || res.statusText}`);
             }
@@ -238,11 +241,16 @@ export default function DashboardPage() {
                                         disabled={isSyncing}
                                         className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
                                     >
-                                        {isSyncing ? "Syncing..." : "Sync Last 30 Emails"}
+                                        {isSyncing ? "Syncing..." : googleIntegration.initialSyncDone ? "Sync New Emails" : "Sync Last 30 Emails"}
                                     </Button>
                                     {syncStatus && (
                                         <p className={`text-xs mt-2 ${syncStatus.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>
                                             {syncStatus}
+                                        </p>
+                                    )}
+                                    {googleIntegration.initialSyncDone && !syncStatus && (
+                                        <p className="text-xs text-indigo-600 font-medium text-center">
+                                            Processed past mails ✨
                                         </p>
                                     )}
                                     <Button disabled variant="ghost" className="w-full text-green-600 cursor-default text-xs h-auto py-1">

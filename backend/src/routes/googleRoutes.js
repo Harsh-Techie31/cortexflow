@@ -36,7 +36,7 @@ router.get('/auth', async (req, res) => {
 
         // Verify Firebase token
         const decodedToken = await admin.auth().verifyIdToken(token);
-        
+
         // Ensure user is synced with MongoDB
         const user = await syncUser(decodedToken);
 
@@ -125,6 +125,7 @@ router.get('/status', async (req, res) => {
 
         res.json({
             connected: !!integration,
+            initialSyncDone: integration?.initialSyncDone || false,
             profile: integration ? {
                 name: integration.profileName,
                 picture: integration.profilePicture,

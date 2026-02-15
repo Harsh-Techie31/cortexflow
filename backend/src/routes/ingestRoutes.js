@@ -53,8 +53,12 @@ router.post('/gmail', authMiddleware, async (req, res) => {
         });
 
         // 3. Fetch Emails
-        console.log(`Starting ingestion for user: ${userDoc.email}`);
-        const rawEmails = await fetchLastEmails(oauth2Client, 30);
+        console.log(`Starting ${integration.initialSyncDone ? 'incremental' : 'initial'} ingestion for user: ${userDoc.email}`);
+
+        // If initial sync done, maybe fetch last 5 just to be safe/incremental as per user request
+        const fetchCount = integration.initialSyncDone ? 5 : 30;
+
+        const { emails: rawEmails, maxHistoryId } = await fetchLastEmails(oauth2Client, fetchCount);
         console.log(`Fetched ${rawEmails.length} emails`);
 
         const allChunks = [];
@@ -80,11 +84,19 @@ router.post('/gmail', authMiddleware, async (req, res) => {
             await upsertEmailChunks(userDoc._id, allChunks);
         }
 
+        // 5. Update Integration record with sync status
+        integration.initialSyncDone = true;
+        if (maxHistoryId) {
+            integration.lastHistoryId = maxHistoryId;
+        }
+        await integration.save();
+
         res.json({
             status: 'success',
             message: `Ingested ${rawEmails.length} emails into ${allChunks.length} searchable chunks.`,
             emailsCount: rawEmails.length,
-            chunksCount: allChunks.length
+            chunksCount: allChunks.length,
+            initialSyncDone: true
         });
 
     } catch (error) {

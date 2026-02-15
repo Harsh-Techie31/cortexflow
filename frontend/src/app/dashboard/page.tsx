@@ -19,6 +19,7 @@ export default function DashboardPage() {
         }
 
         if (user) {
+            testBackend(); // Auto-sync user with MongoDB
             fetchGoogleStatus();
         }
 
@@ -168,13 +169,13 @@ export default function DashboardPage() {
                                 </span>
                             )}
                         </div>
-                        
+
                         {googleIntegration?.connected ? (
                             <div className="mt-4 flex items-center gap-3">
                                 {googleIntegration.profile?.picture && (
-                                    <img 
-                                        src={googleIntegration.profile.picture} 
-                                        alt="Google Profile" 
+                                    <img
+                                        src={googleIntegration.profile.picture}
+                                        alt="Google Profile"
                                         className="h-10 w-10 rounded-full border border-gray-100 shadow-sm"
                                     />
                                 )}

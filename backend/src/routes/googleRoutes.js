@@ -3,6 +3,7 @@ const { google } = require('googleapis');
 const admin = require('../config/firebaseAdmin');
 const User = require('../models/userModel');
 const Integration = require('../models/integrationModel');
+const { syncUser } = require('../utils/userSync');
 
 const router = express.Router();
 
@@ -33,16 +34,18 @@ router.get('/auth', async (req, res) => {
             return res.status(400).json({ error: 'Firebase token required' });
         }
 
-        // Verify Firebase token to get UID
+        // Verify Firebase token
         const decodedToken = await admin.auth().verifyIdToken(token);
-        const uid = decodedToken.uid;
+        
+        // Ensure user is synced with MongoDB
+        const user = await syncUser(decodedToken);
 
         // Create auth URL with UID in state
         const authUrl = oauth2Client.generateAuthUrl({
-            access_type: 'offline', // Required to get refresh token
+            access_type: 'offline',
             scope: SCOPES,
-            state: uid, // Pass Firebase UID to callback
-            prompt: 'consent' // Force consent to ensure refresh token is returned
+            state: user.firebaseUid, // Use synced UID
+            prompt: 'consent'
         });
 
         res.json({ url: authUrl });
@@ -114,12 +117,9 @@ router.get('/status', async (req, res) => {
         }
 
         const decodedToken = await admin.auth().verifyIdToken(token);
-        const uid = decodedToken.uid;
 
-        const user = await User.findOne({ firebaseUid: uid });
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
+        // Auto-sync user
+        const user = await syncUser(decodedToken);
 
         const integration = await Integration.findOne({ userId: user._id, platform: 'google' });
 

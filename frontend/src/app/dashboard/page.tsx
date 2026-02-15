@@ -12,6 +12,8 @@ export default function DashboardPage() {
         connected: boolean;
         profile: { name: string; picture: string; email: string } | null;
     } | null>(null);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
     useEffect(() => {
         if (!loading && !user) {
@@ -99,6 +101,36 @@ export default function DashboardPage() {
             }
         } catch (err: any) {
             setBackendStatus(`Error: ${err.message}`);
+        }
+    };
+
+    const syncEmails = async () => {
+        setIsSyncing(true);
+        setSyncStatus("Fetching and vectorizing emails...");
+        try {
+            const token = await getToken();
+            if (!token) {
+                setSyncStatus("Error: No auth token");
+                return;
+            }
+
+            const res = await fetch("http://localhost:5000/api/ingest/gmail", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                setSyncStatus(`Successfully ingested ${data.emailsCount} emails (${data.chunksCount} searchable chunks).`);
+            } else {
+                setSyncStatus(`Error: ${data.message || res.statusText}`);
+            }
+        } catch (err: any) {
+            setSyncStatus(`Error: ${err.message}`);
+        } finally {
+            setIsSyncing(false);
         }
     };
 
@@ -194,15 +226,29 @@ export default function DashboardPage() {
                             </p>
                         )}
 
-                        <div className="mt-4">
+                        <div className="mt-4 space-y-3">
                             {!googleIntegration?.connected ? (
                                 <Button onClick={connectGmail} variant="outline" className="w-full">
                                     Connect Gmail
                                 </Button>
                             ) : (
-                                <Button disabled variant="ghost" className="w-full text-green-600 cursor-default">
-                                    Connected Already!
-                                </Button>
+                                <>
+                                    <Button
+                                        onClick={syncEmails}
+                                        disabled={isSyncing}
+                                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                                    >
+                                        {isSyncing ? "Syncing..." : "Sync Last 30 Emails"}
+                                    </Button>
+                                    {syncStatus && (
+                                        <p className={`text-xs mt-2 ${syncStatus.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>
+                                            {syncStatus}
+                                        </p>
+                                    )}
+                                    <Button disabled variant="ghost" className="w-full text-green-600 cursor-default text-xs h-auto py-1">
+                                        Connected Already!
+                                    </Button>
+                                </>
                             )}
                         </div>
                     </div>

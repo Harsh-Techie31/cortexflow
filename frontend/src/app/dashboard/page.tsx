@@ -150,134 +150,158 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <header className="bg-white shadow-sm">
-                <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-                    <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
-                    <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-700">{user.email}</span>
-                        <Button variant="outline" size="sm" onClick={logout}>
-                            Log out
-                        </Button>
-                    </div>
-                </div>
-            </header>
-
-            <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-                {/* System Status Check */}
-                <div className="mb-6 rounded-lg bg-indigo-50 p-4 border border-indigo-100">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h3 className="text-sm font-medium text-indigo-800">System Status</h3>
-                            <p className="text-sm text-indigo-600 mt-1">
-                                {backendStatus || "Backend connection not tested yet."}
-                            </p>
-                        </div>
-                        <Button size="sm" onClick={testBackend}>
-                            Test Connection
-                        </Button>
-                    </div>
+        <div className="flex h-screen bg-[#0A0A0B] text-white overflow-hidden">
+            {/* --- SIDEBAR --- */}
+            <aside className="w-72 border-r border-white/10 bg-[#0F0F11] flex flex-col">
+                <div className="p-6">
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+                        Cortex Flow
+                    </h1>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {/* Welcome Card */}
-                    <div className="col-span-full rounded-lg bg-white p-6 shadow-sm">
-                        <h2 className="text-lg font-medium text-gray-900">
-                            Welcome back!
+                <nav className="flex-1 overflow-y-auto px-4 space-y-6">
+                    {/* Integrations Section */}
+                    <div>
+                        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 px-2">
+                            Integrations
                         </h2>
-                        <p className="mt-1 text-gray-500">
-                            Connect your tools to start searching your knowledge base.
-                        </p>
-                    </div>
+                        
+                        <div className="space-y-3">
+                            {/* Gmail Integration Item */}
+                            <div className="rounded-xl border border-white/5 bg-white/5 p-4 hover:bg-white/10 transition-colors">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></div>
+                                        <span className="text-sm font-medium">Gmail</span>
+                                    </div>
+                                    {googleIntegration?.connected && (
+                                        <span className="text-[10px] text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20">
+                                            Active
+                                        </span>
+                                    )}
+                                </div>
 
-                    {/* Gmail Integration Card */}
-                    <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
-                        <div className="flex items-center justify-between">
-                            <h3 className="font-medium text-gray-900">Gmail</h3>
-                            {googleIntegration?.connected ? (
-                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                    Connected
-                                </span>
-                            ) : (
-                                <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                                    Available
-                                </span>
-                            )}
-                        </div>
-
-                        {googleIntegration?.connected ? (
-                            <div className="mt-4 flex items-center gap-3">
-                                {googleIntegration.profile?.picture && (
-                                    <img
-                                        src={googleIntegration.profile.picture}
-                                        alt="Google Profile"
-                                        className="h-10 w-10 rounded-full border border-gray-100 shadow-sm"
-                                    />
+                                {!googleIntegration?.connected ? (
+                                    <Button onClick={connectGmail} variant="outline" size="sm" className="w-full text-xs h-8 border-white/10 hover:bg-white/5">
+                                        Connect
+                                    </Button>
+                                ) : (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            {googleIntegration.profile?.picture && (
+                                                <img src={googleIntegration.profile.picture} className="w-6 h-6 rounded-full border border-white/10" alt="" />
+                                            )}
+                                            <div className="min-w-0">
+                                                <p className="text-xs text-gray-300 truncate">{googleIntegration.profile?.email}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <Button 
+                                            onClick={syncEmails} 
+                                            disabled={isSyncing}
+                                            className="w-full h-8 text-[11px] bg-indigo-600 hover:bg-indigo-700 text-white"
+                                        >
+                                            {isSyncing ? "Syncing..." : googleIntegration.initialSyncDone ? "Sync New" : "Initial Sync"}
+                                        </Button>
+                                        
+                                        {googleIntegration.initialSyncDone && !syncStatus && (
+                                            <p className="text-[10px] text-center text-indigo-400">Processed past mails ✨</p>
+                                        )}
+                                    </div>
                                 )}
-                                <div className="overflow-hidden">
-                                    <p className="text-sm font-medium text-gray-900 truncate">
-                                        {googleIntegration.profile?.name}
-                                    </p>
-                                    <p className="text-xs text-gray-500 truncate">
-                                        {googleIntegration.profile?.email}
-                                    </p>
+                            </div>
+
+                            {/* GitHub Placeholder */}
+                            <div className="rounded-xl border border-white/5 bg-white/5 p-4 opacity-50 cursor-not-allowed">
+                                <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                                        <span className="text-sm font-medium">GitHub</span>
+                                    </div>
+                                    <span className="text-[9px] text-gray-400">Soon</span>
                                 </div>
                             </div>
-                        ) : (
-                            <p className="mt-2 text-sm text-gray-500">
-                                Connect your Gmail account to search emails.
+                        </div>
+                    </div>
+
+                    {/* System Status Section */}
+                    <div className="pt-4 border-t border-white/5">
+                         <div className="px-2 py-2">
+                            <button onClick={testBackend} className="text-[11px] text-gray-500 hover:text-indigo-400 transition-colors flex items-center gap-2">
+                                <div className={`w-1.5 h-1.5 rounded-full ${backendStatus?.includes('Success') ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                                {backendStatus?.includes('Success') ? 'Backend: Connected' : 'Check System Status'}
+                            </button>
+                         </div>
+                    </div>
+                </nav>
+
+                {/* User Info (Bottom) */}
+                <div className="p-4 border-t border-white/10 bg-black/20">
+                    <div className="flex items-center justify-between">
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-medium truncate">{user.email}</span>
+                            <span className="text-[10px] text-gray-500">Free Plan</span>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={logout} className="h-8 w-8 text-gray-500 hover:text-white">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                        </Button>
+                    </div>
+                </div>
+            </aside>
+
+            {/* --- MAIN CHAT AREA --- */}
+            <main className="flex-1 flex flex-col relative bg-[#0D0D0F]">
+                {/* Chat Header */}
+                <header className="h-16 border-b border-white/5 flex items-center px-8 justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-gray-300">New Research Session</span>
+                    </div>
+                </header>
+
+                {/* Message Thread */}
+                <div className="flex-1 overflow-y-auto p-8 space-y-8 max-w-4xl mx-auto w-full">
+                    {/* Welcome Message */}
+                    <div className="flex gap-4">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs font-bold text-white">C</span>
+                        </div>
+                        <div className="space-y-2">
+                            <p className="text-sm leading-relaxed text-gray-300">
+                                Hello! I'm your **Cortex Assistant**. I can search across your connected tools like Gmail to answer complex questions.
                             </p>
-                        )}
-
-                        <div className="mt-4 space-y-3">
-                            {!googleIntegration?.connected ? (
-                                <Button onClick={connectGmail} variant="outline" className="w-full">
-                                    Connect Gmail
-                                </Button>
-                            ) : (
-                                <>
-                                    <Button
-                                        onClick={syncEmails}
-                                        disabled={isSyncing}
-                                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-                                    >
-                                        {isSyncing ? "Syncing..." : googleIntegration.initialSyncDone ? "Sync New Emails" : "Sync Last 30 Emails"}
-                                    </Button>
-                                    {syncStatus && (
-                                        <p className={`text-xs mt-2 ${syncStatus.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>
-                                            {syncStatus}
-                                        </p>
-                                    )}
-                                    {googleIntegration.initialSyncDone && !syncStatus && (
-                                        <p className="text-xs text-indigo-600 font-medium text-center">
-                                            Processed past mails ✨
-                                        </p>
-                                    )}
-                                    <Button disabled variant="ghost" className="w-full text-green-600 cursor-default text-xs h-auto py-1">
-                                        Connected Already!
-                                    </Button>
-                                </>
-                            )}
+                            <p className="text-xs text-gray-500">
+                                Ask me anything about your emails, contacts, or documents.
+                            </p>
                         </div>
                     </div>
 
-                    {/* GitHub Placeholder */}
-                    <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200 opacity-60">
-                        <div className="flex items-center justify-between">
-                            <h3 className="font-medium text-gray-900">GitHub</h3>
-                            <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                                Coming Soon
-                            </span>
+                    {/* Integration Sync Alert if needed */}
+                    {syncStatus && (
+                        <div className="rounded-lg bg-indigo-600/10 border border-indigo-600/20 p-4">
+                            <p className="text-xs text-indigo-400 flex items-center gap-2">
+                                <span className="animate-pulse">●</span> {syncStatus}
+                            </p>
                         </div>
-                        <p className="mt-2 text-sm text-gray-500">
-                            Connect your GitHub account to search repositories.
-                        </p>
-                        <div className="mt-4">
-                            <Button disabled variant="outline" className="w-full">
-                                Connect GitHub
-                            </Button>
-                        </div>
+                    )}
+                </div>
+
+                {/* Chat Input (Bottom) */}
+                <div className="p-8 pt-0 max-w-4xl mx-auto w-full">
+                    <div className="relative group">
+                        <textarea 
+                            placeholder="Ask a question about your data..."
+                            rows={1}
+                            className="w-full bg-[#161618] border border-white/10 rounded-2xl px-6 py-4 pr-16 text-sm focus:outline-none focus:border-indigo-500/50 transition-all resize-none shadow-2xl"
+                        />
+                        <button className="absolute right-4 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-xl transition-all disabled:opacity-50">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                        </button>
                     </div>
+                    <p className="text-[10px] text-gray-600 mt-4 text-center">
+                        Cortex Flow can make mistakes. Verify important information.
+                    </p>
                 </div>
             </main>
         </div>
